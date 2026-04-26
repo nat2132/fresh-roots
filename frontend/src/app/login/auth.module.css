@@ -1,0 +1,237 @@
+.authPage {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 100vh;
+  padding-top: var(--navbar-height);
+}
+
+/* Left illustration panel */
+.authLeft {
+  background: linear-gradient(160deg, var(--deep-forest-dark), var(--deep-forest), var(--leaf-green));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.authLeft::before {
+  content: '';
+  position: absolute;
+  width: 400px;
+  height: 400px;
+  border-radius: var(--radius-blob);
+  background: rgba(255, 255, 255, 0.05);
+  top: -100px;
+  right: -100px;
+  animation: float 8s ease-in-out infinite;
+}
+
+.authLeft::after {
+  content: '';
+  position: absolute;
+  width: 300px;
+  height: 300px;
+  border-radius: var(--radius-organic);
+  background: rgba(232, 168, 71, 0.08);
+  bottom: -80px;
+  left: -80px;
+  animation: float 10s ease-in-out infinite reverse;
+}
+
+.authIllustration {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  padding: var(--space-2xl);
+}
+
+.illustrationContent {
+  color: white;
+}
+
+.bigEmoji {
+  font-size: 4rem;
+  display: block;
+  margin-bottom: var(--space-lg);
+  animation: float 4s ease-in-out infinite;
+}
+
+.illustTitle {
+  color: white;
+  font-size: 2rem;
+  margin-bottom: var(--space-sm);
+}
+
+.illustSubtitle {
+  color: rgba(255, 255, 255, 0.7);
+  max-width: 300px;
+  margin: 0 auto var(--space-xl);
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.illustStats {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+/* Right form panel */
+.authRight {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2xl);
+  background: var(--soft-white);
+}
+
+.authForm {
+  width: 100%;
+  max-width: 440px;
+  animation: fadeInUp 0.6s var(--ease-out);
+}
+
+.formHeader {
+  margin-bottom: var(--space-xl);
+}
+
+.formHeader h1 {
+  font-size: 1.8rem;
+  margin-bottom: var(--space-xs);
+}
+
+.formHeader p {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+}
+
+/* Error */
+.error {
+  background: rgba(201, 76, 61, 0.1);
+  color: var(--tomato);
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  font-size: 0.9rem;
+  margin-bottom: var(--space-lg);
+  border-left: 3px solid var(--tomato);
+}
+
+/* Role selector */
+.roleSelector {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-xl);
+}
+
+.roleBtn {
+  padding: 0.85rem;
+  border: 2px solid var(--border-light);
+  border-radius: var(--radius-md);
+  background: white;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-smooth);
+}
+
+.roleBtn:hover {
+  border-color: var(--leaf-green);
+  color: var(--leaf-green);
+}
+
+.roleActive {
+  background: rgba(74, 124, 89, 0.08);
+  border-color: var(--leaf-green);
+  color: var(--leaf-green);
+  box-shadow: 0 0 0 3px rgba(74, 124, 89, 0.1);
+}
+
+/* Form elements */
+.twoCol {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-md);
+}
+
+.formActions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: var(--space-lg);
+  margin-top: calc(-1 * var(--space-sm));
+}
+
+.forgotLink {
+  font-size: 0.85rem;
+  color: var(--leaf-green);
+  font-weight: 600;
+}
+
+.submitBtn {
+  width: 100%;
+  padding: 0.9rem;
+  font-size: 1rem;
+  margin-bottom: var(--space-lg);
+}
+
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: rotate-slow 0.6s linear infinite;
+  display: inline-block;
+}
+
+/* Divider */
+.divider {
+  display: flex;
+  align-items: center;
+  margin-bottom: var(--space-lg);
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border-light);
+}
+
+.divider span {
+  padding: 0 var(--space-md);
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.switchAuth {
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.switchLink {
+  font-weight: 700;
+  color: var(--leaf-green);
+}
+
+@media (max-width: 768px) {
+  .authPage {
+    grid-template-columns: 1fr;
+  }
+
+  .authLeft {
+    display: none;
+  }
+
+  .twoCol {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,321 @@
+.page {
+  padding-top: calc(var(--navbar-height) + var(--space-xl));
+  padding-bottom: var(--space-4xl);
+  min-height: 100vh;
+  background: var(--soft-white);
+}
+
+.backLink {
+  display: inline-block;
+  color: var(--text-muted);
+  font-weight: 600;
+  margin-bottom: var(--space-xl);
+  transition: color var(--duration-fast);
+}
+
+.backLink:hover {
+  color: var(--leaf-green);
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3xl);
+  align-items: start;
+}
+
+/* Image Column */
+.imageBox {
+  background: white;
+  border-radius: var(--radius-organic);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 450px;
+  position: relative;
+  margin-bottom: var(--space-xl);
+  border: 1px solid var(--border-light);
+  transition: transform var(--duration-slow) var(--ease-spring);
+  overflow: hidden;
+}
+
+.mainImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.imageBox:hover {
+  transform: scale(1.02);
+}
+
+
+.organicTag {
+  position: absolute;
+  top: var(--space-lg);
+  left: var(--space-lg);
+  background: white;
+  color: var(--deep-forest);
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-xl);
+  font-weight: 700;
+  font-size: 0.85rem;
+  box-shadow: var(--shadow-sm);
+  z-index: 10;
+}
+
+/* Farmer Card */
+.farmerCard {
+  background: white;
+  border-radius: var(--radius-xl);
+  padding: var(--space-lg);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-sm);
+}
+
+.farmerHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  margin-bottom: var(--space-sm);
+}
+
+.farmerAvatar {
+  width: 50px;
+  height: 50px;
+  background: var(--cream);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.farmerAvatarImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.farmerName {
+  font-family: var(--font-body);
+  color: var(--leaf-green);
+  font-size: 1.1rem;
+}
+
+.farmerLocation {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.farmerBio {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+/* Details Column */
+.categoryWrap {
+  margin-bottom: var(--space-sm);
+}
+
+.categoryLink {
+  color: var(--leaf-green);
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  letter-spacing: 1px;
+}
+
+.title {
+  font-size: 3rem;
+  margin-bottom: var(--space-md);
+  color: var(--deep-forest-dark);
+}
+
+.priceWrap {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-xl);
+}
+
+.price {
+  font-family: var(--font-heading);
+  font-size: 2.5rem;
+  color: var(--deep-forest);
+}
+
+.unit {
+  font-size: 1.1rem;
+  color: var(--text-muted);
+}
+
+/* Freshness Meter */
+.freshnessContainer {
+  background: white;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  margin-bottom: var(--space-xl);
+  box-shadow: var(--shadow-sm);
+}
+
+.freshnessHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-sm);
+}
+
+.freshnessTitle {
+  font-weight: 700;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.freshnessLabel {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+}
+
+.freshnessBarBg {
+  height: 8px;
+  background: var(--border-light);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: var(--space-sm);
+}
+
+.freshnessBarFill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 1s var(--ease-out);
+}
+
+.harvestText {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.harvestText strong {
+  color: var(--text-primary);
+}
+
+/* Description */
+.description {
+  font-size: 1.05rem;
+  line-height: 1.7;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-2xl);
+}
+
+.storyBox {
+  margin-top: var(--space-md);
+  padding: var(--space-md) var(--space-lg);
+  background: var(--cream);
+  border-left: 4px solid var(--olive);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  font-family: var(--font-accent);
+  font-size: 1.2rem;
+  color: var(--warm-soil);
+}
+
+/* Actions */
+.actionArea {
+  display: flex;
+  gap: var(--space-md);
+  align-items: center;
+  padding-top: var(--space-lg);
+  border-top: 1px solid var(--border-light);
+}
+
+.quantityWrap {
+  display: flex;
+  align-items: center;
+  background: white;
+  border: 2px solid var(--border-light);
+  border-radius: var(--radius-xl);
+  height: 52px;
+}
+
+.qtyBtn {
+  background: transparent;
+  border: none;
+  width: 40px;
+  height: 100%;
+  font-size: 1.2rem;
+  cursor: pointer;
+  color: var(--text-primary);
+  transition: background var(--duration-fast);
+}
+
+.qtyBtn:hover {
+  background: var(--cream);
+}
+
+.qtyBtn:first-child {
+  border-radius: var(--radius-xl) 0 0 var(--radius-xl);
+}
+
+.qtyBtn:last-child {
+  border-radius: 0 var(--radius-xl) var(--radius-xl) 0;
+}
+
+.qtyValue {
+  width: 40px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.addToCartBtn {
+  flex: 1;
+  height: 52px;
+}
+
+.added {
+  background: var(--fresh-green) !important;
+  pointer-events: none;
+  animation: pulse-fresh 0.4s var(--ease-spring);
+}
+
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(255,255,255,0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  display: inline-block;
+  animation: rotate-slow 0.8s linear infinite;
+}
+
+@media (max-width: 968px) {
+  .layout {
+    grid-template-columns: 1fr;
+    gap: var(--space-xl);
+  }
+
+  .imageBox {
+    min-height: 350px;
+  }
+}
+
+@media (max-width: 480px) {
+  .actionArea {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .quantityWrap {
+    justify-content: center;
+  }
+
+  .title {
+    font-size: 2.2rem;
+  }
+}
