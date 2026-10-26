@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import Navbar from '@/components/layout/Navbar';
-import styles from '../login/auth.module.css';
 import fpStyles from './forgot.module.css';
 
 export default function ForgotPasswordPage() {
@@ -46,8 +45,8 @@ export default function ForgotPasswordPage() {
                     required
                   />
                 </div>
-                <button type="submit" className={`btn btn-primary ${styles.submitBtn}`} disabled={loading}>
-                  {loading ? <span className={styles.spinner}></span> : 'Send Reset Link'}
+                <button type="submit" className="btn btn-primary" disabled={loading}>
+                  {loading ? <span className={fpStyles.spinner}></span> : 'Send Reset Link'}
                 </button>
               </form>
 
