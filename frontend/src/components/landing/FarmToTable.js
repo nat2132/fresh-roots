@@ -1,90 +1,62 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
-import styles from './FarmToTable.module.css';
-
-const steps = [
-  {
-    icon: '🌱',
-    title: 'Planted with Care',
-    description: 'Local farmers select the finest heritage seeds, planting them in rich, nurtured soil using sustainable practices.',
-    accent: '#4A7C59',
-  },
-  {
-    icon: '☀️',
-    title: 'Grown Naturally',
-    description: 'Sun, water, and patience. Our farmers let nature do its work — no shortcuts, no chemicals, just honest farming.',
-    accent: '#E8A847',
-  },
-  {
-    icon: '✋',
-    title: 'Harvested Fresh',
-    description: 'Picked at peak ripeness, often the same morning you order. That\'s freshness you can taste in every bite.',
-    accent: '#C94C3D',
-  },
-  {
-    icon: '🏠',
-    title: 'Delivered to You',
-    description: 'From the farm gate straight to your table. No warehouses, no middlemen — just farm-fresh goodness.',
-    accent: '#8B6F47',
-  },
-];
+import { Leaf, Truck, ShoppingBag, Heart } from 'lucide-react';
 
 export default function FarmToTable() {
-  const sectionRef = useRef(null);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add(styles.visible);
-          }
-        });
-      },
-      { threshold: 0.15 }
-    );
-
-    const elements = sectionRef.current?.querySelectorAll('[data-animate]');
-    elements?.forEach(el => observer.observe(el));
-
-    return () => observer.disconnect();
-  }, []);
+  const steps = [
+    {
+      icon: <Leaf className="h-8 w-8 text-brand-green" />,
+      title: "Grown Locally",
+      description: "Farmers nurture every seed using sustainable practices right in your region."
+    },
+    {
+      icon: <ShoppingBag className="h-8 w-8 text-brand-green" />,
+      title: "You Choose",
+      description: "Browse the morning's harvest and select exactly what your family needs."
+    },
+    {
+      icon: <Truck className="h-8 w-8 text-brand-green" />,
+      title: "Fresh Delivery",
+      description: "Produce is picked to order and delivered to your door within 24 hours."
+    },
+    {
+      icon: <Heart className="h-8 w-8 text-brand-green" />,
+      title: "Shared Value",
+      description: "Fair prices for you, and more profit directly in the hands of local farmers."
+    }
+  ];
 
   return (
-    <section className={styles.section} id="farm-to-table" ref={sectionRef}>
-      <div className="container">
-        <div className={styles.header} data-animate>
-          <span className={styles.handwritten}>The journey of your food</span>
-          <h2>From Farm to Your Table</h2>
-          <p className={styles.headerSub}>
-            Every vegetable has a story. Here&apos;s how fresh produce travels
-            from our partner farms directly to your kitchen.
+    <section id="farm-to-table" className="py-24 bg-brand-cream/30 dark:bg-slate-900/50 relative overflow-hidden transition-colors duration-500">
+      <div className="container mx-auto px-4 md:px-6 relative z-10">
+        <div className="text-center space-y-4 mb-20">
+          <span className="font-accent text-2xl text-brand-soil dark:text-brand-sunrise block">The Journey</span>
+          <h2 className="font-serif text-4xl md:text-5xl text-brand-forest dark:text-white">From Farm to Your Table</h2>
+          <p className="text-slate-500 dark:text-slate-400 max-w-2xl mx-auto italic">
+            We&apos;ve cut out the middlemen to bring you a shorter, cleaner, and fairer food system.
           </p>
         </div>
 
-        <div className={styles.timeline}>
-          {steps.map((step, index) => (
-            <div
-              key={index}
-              className={styles.step}
-              data-animate
-              style={{ '--step-color': step.accent, animationDelay: `${index * 0.15}s` }}
-            >
-              <div className={styles.stepConnector}>
-                <div className={styles.stepDot}></div>
-                {index < steps.length - 1 && <div className={styles.stepLine}></div>}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
+          {steps.map((step, idx) => (
+            <div key={idx} className="flex flex-col items-center text-center space-y-6 group">
+              <div className="h-20 w-20 rounded-full bg-white dark:bg-slate-800 shadow-md flex items-center justify-center transition-transform duration-500 group-hover:scale-110 group-hover:shadow-xl relative">
+                {step.icon}
+                <div className="absolute -top-2 -right-2 h-8 w-8 bg-brand-sunrise text-white rounded-full flex items-center justify-center font-bold shadow-sm">
+                  {idx + 1}
+                </div>
               </div>
-              <div className={styles.stepCard}>
-                <div className={styles.stepIcon}>{step.icon}</div>
-                <div className={styles.stepNumber}>0{index + 1}</div>
-                <h3>{step.title}</h3>
-                <p>{step.description}</p>
+              <div className="space-y-2">
+                <h3 className="font-serif text-2xl text-brand-forest dark:text-brand-green-light">{step.title}</h3>
+                <p className="text-slate-600 dark:text-slate-400 leading-relaxed">{step.description}</p>
               </div>
             </div>
           ))}
         </div>
       </div>
+
+      {/* Decorative Path */}
+      <div className="hidden lg:block absolute top-[60%] left-0 w-full h-px border-t-2 border-dashed border-brand-green/10 dark:border-white/5 -z-0" />
     </section>
   );
 }

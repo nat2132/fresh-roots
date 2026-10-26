@@ -1,108 +1,174 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import styles from './FeaturedProducts.module.css';
+import { useCart } from '@/context/CartContext';
+import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Plus, ShoppingCart, Leaf, Sparkles, ChevronRight } from 'lucide-react';
+import api from '@/lib/api';
 
-// Import images
+// Import fallback images
 import broccoliImg from '../../images/products/broccoli.jpeg';
 import tomatoImg from '../../images/products/tomato.jpeg';
 import garlicImg from '../../images/products/garlic.jpeg';
 import onionImg from '../../images/products/onion.jpeg';
 import potatoImg from '../../images/products/potato.jpeg';
 
-const mockProducts = [
-  { id: 1, name: 'Organic Baby Spinach', price: 250, unit: 'bunch', farmer: "Mama Green's Garden", image: broccoliImg, freshness: 100, label: 'Just Harvested', organic: true },
-  { id: 2, name: 'Rainbow Carrots', price: 280, unit: 'bunch', farmer: 'Earth Harvest Farms', image: potatoImg, freshness: 95, label: 'Very Fresh', organic: true },
-  { id: 3, name: 'Heirloom Tomatoes', price: 350, unit: 'kg', farmer: "Mama Green's Garden", image: tomatoImg, freshness: 95, label: 'Very Fresh', organic: true },
-  { id: 4, name: 'Fresh Basil Bundle', price: 180, unit: 'bunch', farmer: 'Santos Family Farm', image: garlicImg, freshness: 100, label: 'Just Harvested', organic: false },
-  { id: 5, name: 'Sweet Bell Peppers', price: 300, unit: 'kg', farmer: 'Santos Family Farm', image: tomatoImg, freshness: 100, label: 'Just Harvested', organic: false },
-  { id: 6, name: 'Organic Broccoli', price: 200, unit: 'piece', farmer: 'Earth Harvest Farms', image: broccoliImg, freshness: 95, label: 'Very Fresh', organic: true },
-];
-
 export default function FeaturedProducts() {
-  const sectionRef = useRef(null);
-  const [hoveredId, setHoveredId] = useState(null);
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const { addToCart } = useCart();
 
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add(styles.visible);
-          }
-        });
-      },
-      { threshold: 0.1 }
-    );
-
-    const elements = sectionRef.current?.querySelectorAll('[data-animate]');
-    elements?.forEach(el => observer.observe(el));
-
-    return () => observer.disconnect();
+    fetchFeatured();
   }, []);
 
+  const fetchFeatured = async () => {
+    try {
+      const data = await api.getFeaturedProducts();
+      const items = data.results || data;
+      
+      const mapped = items.slice(0, 8).map(p => {
+        let fallbackImg = broccoliImg;
+        if (p.slug.includes('tomato') || p.slug.includes('pepper')) fallbackImg = tomatoImg;
+        else if (p.slug.includes('carrot') || p.slug.includes('beet')) fallbackImg = potatoImg;
+        else if (p.slug.includes('onion') || p.slug.includes('squash')) fallbackImg = onionImg;
+        else if (p.slug.includes('garlic') || p.slug.includes('basil')) fallbackImg = garlicImg;
+
+        return {
+          ...p,
+          image: p.image || fallbackImg,
+          price: parseFloat(p.price) || 0,
+        };
+      });
+      setProducts(mapped);
+    } catch (err) {
+      console.error('Failed to load featured products', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddToCart = async (e, product) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!product.in_stock) return;
+    
+    const res = await addToCart(product.id, 1);
+    if (!res.success) {
+      alert(res.error);
+    }
+  };
+
   return (
-    <section className={styles.section} ref={sectionRef}>
-      <div className="container">
-        <div className={styles.header} data-animate>
-          <span className={styles.handwritten}>Picked just for you</span>
-          <h2>Today&apos;s Fresh Picks</h2>
-          <p className={styles.headerSub}>
-            The freshest vegetables from our partner farms, harvested within the last 24 hours.
+    <section className="py-24 bg-white dark:bg-slate-950 transition-colors duration-500">
+      <div className="container mx-auto px-4 md:px-6">
+        <div className="text-center space-y-4 mb-16">
+          <span className="font-accent text-2xl text-brand-soil dark:text-brand-sunrise animate-in fade-in duration-1000">
+            Picked just for you
+          </span>
+          <h2 className="font-serif text-4xl md:text-5xl text-brand-forest dark:text-white">Today&apos;s Fresh Picks</h2>
+          <p className="text-slate-500 dark:text-slate-400 max-w-2xl mx-auto">
+            The freshest vegetables from our partner farms, harvested within the last 24 hours and delivered straight to your door.
           </p>
         </div>
 
-        <div className={styles.grid} data-animate>
-          {mockProducts.map((product, index) => (
-            <Link
-              href={`/products/${product.name.toLowerCase().replace(/\s+/g, '-')}`}
-              key={product.id}
-              className={styles.card}
-              style={{ animationDelay: `${index * 0.1}s` }}
-              onMouseEnter={() => setHoveredId(product.id)}
-              onMouseLeave={() => setHoveredId(null)}
-            >
-            <div className={styles.cardTop}>
-              <div className={styles.cardImageContainer}>
-                <Image src={product.image} alt={product.name} className={styles.cardImage} />
+        {loading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="space-y-4 animate-pulse">
+                <div className="bg-slate-100 dark:bg-slate-800 aspect-square rounded-2xl" />
+                <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded w-3/4" />
+                <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded w-1/2" />
               </div>
-                {product.organic && (
-                  <span className={`badge badge-organic ${styles.organicBadge}`}>🌱 Organic</span>
-                )}
-                <div className={styles.freshnessBadge}>
-                  <span className={`freshness-dot ${product.freshness >= 90 ? 'freshness-excellent' : 'freshness-good'}`}></span>
-                  {product.label}
-                </div>
-              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            {products.map((product, index) => (
+              <Link
+                href={`/products/${product.slug}`}
+                key={product.id}
+                className="group block"
+              >
+                <Card className="border-none shadow-none bg-transparent overflow-visible transition-transform duration-500 group-hover:-translate-y-2">
+                  <CardHeader className="p-0 relative mb-4">
+                    <div className="aspect-square rounded-2xl overflow-hidden shadow-md group-hover:shadow-xl transition-shadow duration-500 relative bg-brand-cream/30 dark:bg-slate-900">
+                      <Image 
+                        src={product.image} 
+                        alt={product.name} 
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
+                      />
+                      <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                    
+                    {/* Floating Badges */}
+                    <div className="absolute top-3 left-3 flex flex-col gap-2">
+                      {product.is_organic && (
+                        <Badge className="bg-brand-green/90 text-white border-none shadow-sm backdrop-blur-sm">
+                          <Leaf className="h-3 w-3 mr-1" /> Organic
+                        </Badge>
+                      )}
+                      <Badge className="bg-white/90 dark:bg-slate-800/90 text-brand-forest dark:text-white border-none shadow-sm backdrop-blur-sm">
+                        <Sparkles className="h-3 w-3 mr-1 text-brand-sunrise" /> {product.freshness_label}
+                      </Badge>
+                    </div>
 
-              <div className={styles.cardBody}>
-                <h3 className={styles.cardName}>{product.name}</h3>
-                <p className={styles.cardFarmer}>by {product.farmer}</p>
+                    {!product.in_stock && (
+                      <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
+                        <Badge variant="destructive" className="text-lg px-4 py-1.5 shadow-xl rotate-12">
+                          Out of Stock
+                        </Badge>
+                      </div>
+                    )}
+                  </CardHeader>
+                  
+                  <CardContent className="p-0 space-y-1">
+                    <h3 className="font-serif text-xl text-brand-forest dark:text-white group-hover:text-brand-green transition-colors">
+                      {product.name}
+                    </h3>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">by {product.farmer_name}</p>
+                  </CardContent>
 
-                <div className={styles.cardBottom}>
-                  <div className={styles.productPrice}>
-                    <span className={styles.priceValue}>{product.price.toFixed(0)} ETB</span>
-                    <span className={styles.priceUnit}>/ {product.unit}</span>
-                  </div>
+                  <CardFooter className="p-0 pt-3 flex items-center justify-between">
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-xl font-bold text-slate-900 dark:text-white">{product.price.toFixed(0)} ETB</span>
+                      <span className="text-xs text-slate-400 dark:text-slate-500">/ {product.unit}</span>
+                    </div>
 
-                  <button
-                    className={`${styles.addBtn} ${hoveredId === product.id ? styles.addBtnVisible : ''}`}
-                    onClick={(e) => { e.preventDefault(); }}
-                  >
-                    +
-                  </button>
-                </div>
-              </div>
-            </Link>
-          ))}
-        </div>
+                    <Button 
+                      size="icon" 
+                      className={`rounded-full h-10 w-10 transition-all duration-300 shadow-md ${
+                        product.in_stock 
+                          ? 'bg-brand-green hover:bg-brand-forest text-white group-hover:scale-110' 
+                          : 'bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed'
+                      }`}
+                      disabled={!product.in_stock}
+                      onClick={(e) => handleAddToCart(e, product)}
+                    >
+                      {product.in_stock ? <Plus className="h-5 w-5" /> : '...'}
+                    </Button>
+                  </CardFooter>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        )}
 
-        <div className={styles.viewAll} data-animate>
-          <Link href="/products" className="btn btn-secondary btn-lg">
-            View All Products →
-          </Link>
+        <div className="mt-20 text-center">
+          <Button 
+            variant="outline" 
+            size="lg" 
+            className="rounded-full border-brand-green text-brand-green hover:bg-brand-green hover:text-white px-10 group dark:hover:bg-brand-green dark:hover:text-white"
+            nativeButton={false}
+            render={<Link href="/products" />}
+          >
+            View All Products
+            <ChevronRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
+          </Button>
         </div>
       </div>
     </section>

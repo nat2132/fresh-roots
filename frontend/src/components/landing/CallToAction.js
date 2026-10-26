@@ -1,50 +1,41 @@
 'use client';
 
 import Link from 'next/link';
-import styles from './CallToAction.module.css';
+import { Button } from '@/components/ui/button';
+import { ArrowRight, Sparkles } from 'lucide-react';
 
 export default function CallToAction() {
   return (
-    <section className={styles.section}>
-      <div className={styles.bgOrganics}>
-        <span className={styles.floatVeg} style={{ top: '10%', left: '5%', animationDelay: '0s' }}>🥕</span>
-        <span className={styles.floatVeg} style={{ top: '60%', left: '8%', animationDelay: '1s' }}>🥬</span>
-        <span className={styles.floatVeg} style={{ top: '20%', right: '10%', animationDelay: '2s' }}>🍅</span>
-        <span className={styles.floatVeg} style={{ top: '70%', right: '5%', animationDelay: '0.5s' }}>🌿</span>
-        <span className={styles.floatVeg} style={{ top: '40%', right: '15%', animationDelay: '1.5s' }}>🥦</span>
-      </div>
-
-      <div className="container">
-        <div className={styles.content}>
-          <span className={styles.handwritten}>Join our growing community</span>
-          <h2 className={styles.title}>Ready to Taste the Difference?</h2>
-          <p className={styles.subtitle}>
-            Join thousands of families who&apos;ve ditched the supermarket aisle
-            for farm-fresh vegetables delivered with care.
-          </p>
-          <div className={styles.cta}>
-            <Link href="/signup" className="btn btn-accent btn-lg">
-              🌱 Start Shopping Fresh
-            </Link>
-            <Link href="/signup" className="btn btn-ghost btn-lg" style={{ color: 'white', borderColor: 'rgba(255,255,255,0.3)' }}>
-              Join as a Farmer →
-            </Link>
+    <section className="py-24 px-4 md:px-0 bg-white dark:bg-slate-950 transition-colors duration-500">
+      <div className="container mx-auto">
+        <div className="relative overflow-hidden bg-brand-forest dark:bg-slate-900 rounded-[3rem] p-12 md:p-24 text-center text-white shadow-2xl">
+          {/* Decorative shapes */}
+          <div className="absolute top-0 right-0 p-12 text-white/5">
+            <Sparkles className="h-64 w-64" />
           </div>
+          <div className="absolute bottom-[-10%] left-[-5%] w-[40%] h-[60%] bg-brand-green/20 rounded-leaf blur-3xl" />
+          
+          <div className="relative z-10 max-w-3xl mx-auto space-y-10">
+            <div className="space-y-6">
+              <span className="font-accent text-3xl text-brand-sunrise animate-pulse block">Freshness is just a click away</span>
+              <h2 className="font-serif text-5xl md:text-7xl leading-tight">
+                Ready to Taste the Difference?
+              </h2>
+              <p className="text-xl text-white/70 leading-relaxed max-w-xl mx-auto">
+                Join thousands of families supporting local agriculture and eating the freshest produce in the city.
+              </p>
+            </div>
 
-          <div className={styles.stats}>
-            <div className={styles.stat}>
-              <span className={styles.statValue}>3,200+</span>
-              <span className={styles.statLabel}>Happy Customers</span>
-            </div>
-            <div className={styles.statDivider}></div>
-            <div className={styles.stat}>
-              <span className={styles.statValue}>45+</span>
-              <span className={styles.statLabel}>Local Farms</span>
-            </div>
-            <div className={styles.statDivider}></div>
-            <div className={styles.stat}>
-              <span className={styles.statValue}>12,000+</span>
-              <span className={styles.statLabel}>Orders Delivered</span>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
+              <Button size="lg" className="bg-brand-green hover:bg-white hover:text-brand-forest text-white h-16 px-12 rounded-full text-xl font-bold shadow-xl shadow-brand-green/20 group" asChild>
+                <Link href="/signup">
+                  Start Your Basket
+                  <ArrowRight className="ml-2 h-6 w-6 transition-transform group-hover:translate-x-1" />
+                </Link>
+              </Button>
+              <Button variant="ghost" size="lg" className="h-16 px-10 rounded-full text-lg font-bold text-white hover:bg-white/10" asChild>
+                <Link href="/products">Browse Today&apos;s Harvest</Link>
+              </Button>
             </div>
           </div>
         </div>

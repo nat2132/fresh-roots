@@ -7,12 +7,17 @@ from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
 from django.core.mail import send_mail
 
-from .serializers import RegisterSerializer, UserSerializer, ForgotPasswordSerializer, ResetPasswordSerializer
+from core.permissions import IsAdmin
+from .serializers import (
+    RegisterSerializer, StaffCreateSerializer, UserSerializer,
+    ForgotPasswordSerializer, ResetPasswordSerializer, UserManageSerializer
+)
 
 User = get_user_model()
 
 
 class RegisterView(generics.CreateAPIView):
+    """Customer self-registration. Only creates 'customer' role."""
     queryset = User.objects.all()
     serializer_class = RegisterSerializer
     permission_classes = [permissions.AllowAny]
@@ -27,12 +32,79 @@ class RegisterView(generics.CreateAPIView):
         }, status=status.HTTP_201_CREATED)
 
 
+class StaffCreateView(generics.CreateAPIView):
+    """Admin-only endpoint to create internal staff accounts."""
+    serializer_class = StaffCreateSerializer
+    permission_classes = [IsAdmin]
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        return Response({
+            'message': f'{user.get_role_display()} account created.',
+            'user': UserSerializer(user).data,
+        }, status=status.HTTP_201_CREATED)
+
+
 class ProfileView(generics.RetrieveUpdateAPIView):
+    """Authenticated user's own profile."""
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_object(self):
         return self.request.user
+
+
+class UserManageView(generics.UpdateAPIView):
+    """Admin: manage user role and active status."""
+    queryset = User.objects.all()
+    serializer_class = UserManageSerializer
+    permission_classes = [IsAdmin]
+
+    def update(self, request, *args, **kwargs):
+        # Allow partial updates
+        kwargs['partial'] = True
+        return super().update(request, *args, **kwargs)
+
+
+class AllUsersListView(generics.ListAPIView):
+    """Admin: list all users."""
+    serializer_class = UserSerializer
+    permission_classes = [IsAdmin]
+
+    def get_queryset(self):
+        qs = User.objects.all()
+        role = self.request.query_params.get('role')
+        if role:
+            qs = qs.filter(role=role)
+        return qs.order_by('-date_joined', 'username')
+
+
+class StaffListView(generics.ListAPIView):
+    """Admin: list all internal staff members."""
+    serializer_class = UserSerializer
+    permission_classes = [IsAdmin]
+
+    def get_queryset(self):
+        role = self.request.query_params.get('role')
+        qs = User.objects.exclude(role='customer')
+        if role:
+            qs = qs.filter(role=role)
+        return qs.order_by('role', 'username')
+
+
+class DeliveryPartnerListView(generics.ListAPIView):
+    """Admin: list delivery partners, filterable by availability."""
+    serializer_class = UserSerializer
+    permission_classes = [IsAdmin]
+
+    def get_queryset(self):
+        qs = User.objects.filter(role='delivery_partner')
+        available = self.request.query_params.get('available')
+        if available is not None:
+            qs = qs.filter(is_available=available.lower() == 'true')
+        return qs.order_by('username')
 
 
 class ForgotPasswordView(APIView):

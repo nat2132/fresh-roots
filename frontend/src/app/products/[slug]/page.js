@@ -1,202 +1,297 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
-import styles from './product-detail.module.css';
+import { useCart } from '@/context/CartContext';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { Progress } from '@/components/ui/progress';
+import { 
+  ArrowLeft, 
+  ShoppingCart, 
+  Leaf, 
+  Sparkles, 
+  MapPin, 
+  Clock, 
+  Minus, 
+  Plus, 
+  CheckCircle2,
+  Info,
+  Calendar
+} from 'lucide-react';
+import api from '@/lib/api';
 
-// Import images
+// Import fallback images
 import broccoliImg from '../../../images/products/broccoli.jpeg';
 import tomatoImg from '../../../images/products/tomato.jpeg';
 import onionImg from '../../../images/products/onion.jpeg';
 import potatoImg from '../../../images/products/potato.jpeg';
 import garlicImg from '../../../images/products/garlic.jpeg';
-
 import farmer1Img from '../../../images/dashboard/farmer1.webp';
-import farmer2Img from '../../../images/dashboard/farmer2.jpg';
-import farmer3Img from '../../../images/dashboard/farmer3.jpg';
 
-// Using mock data for the static UI since the backend might not be running
-const getMockProduct = (slug) => {
-  const name = slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-  
-  // Logic to pick a matching image
-  let image = broccoliImg;
-  if (slug.includes('tomato') || slug.includes('pepper')) image = tomatoImg;
-  else if (slug.includes('carrot') || slug.includes('beet')) image = potatoImg;
-  else if (slug.includes('onion') || slug.includes('squash')) image = onionImg;
-  else if (slug.includes('garlic') || slug.includes('basil') || slug.includes('rosemary')) image = garlicImg;
-
-  const farmers = [
-    { name: 'Sarah Mendes', farm_name: "Mama Green's Garden", avatar: farmer1Img, location: 'Riverside Valley, CA' },
-    { name: 'James Okonkwo', farm_name: 'Earth Harvest Farms', avatar: farmer2Img, location: 'Sunnyvale Hills, OR' },
-    { name: 'Maria Santos', farm_name: 'Santos Family Farm', avatar: farmer3Img, location: 'Green Meadow, WA' },
-  ];
-  
-  const farmer = farmers[Math.floor(Math.random() * farmers.length)];
-
-  return {
-    id: 1,
-    name: name,
-    slug: slug,
-    description: `Fresh, locally grown ${name.toLowerCase()} straight from the farm. Nurtured with care in rich, organic soil to bring you the best flavor and nutrition.`,
-    story: `The ${name.toLowerCase()} at our farm are an heirloom variety that we've been growing for over three generations. We wake up before sunrise to hand-pick them when the dew is still fresh on the leaves.`,
-    price: 350,
-    unit: 'bunch',
-    farmer: farmer,
-    image: image,
-    freshness: 95,
-    label: 'Just Harvested',
-    organic: true,
-    category: { name: 'Local Produce', slug: 'local-produce' },
-    harvestDate: 'Yesterday',
-    stock: 50
-  };
-};
-
-export default function ProductDetailPage({ params }) {
+export default function ProductDetailPage(props) {
+  const params = use(props.params);
   const router = useRouter();
   const [product, setProduct] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const [adding, setAdding] = useState(false);
   const [added, setAdded] = useState(false);
+  const { addToCart } = useCart();
 
   useEffect(() => {
-    // In a real app, we'd fetch this. Using mock for now.
-    setProduct(getMockProduct(params.slug));
+    fetchProduct();
   }, [params.slug]);
 
-  if (!product) return null;
+  const fetchProduct = async () => {
+    try {
+      const p = await api.getProduct(params.slug);
+      
+      let img = broccoliImg;
+      if (p.slug.includes('tomato') || p.slug.includes('pepper')) img = tomatoImg;
+      else if (p.slug.includes('carrot') || p.slug.includes('beet')) img = potatoImg;
+      else if (p.slug.includes('onion') || p.slug.includes('squash')) img = onionImg;
+      else if (p.slug.includes('garlic') || p.slug.includes('basil')) img = garlicImg;
 
-  const handleAddToCart = () => {
+      const mappedFarmer = {
+        name: p.farmer ? `${p.farmer.first_name || ''} ${p.farmer.last_name || ''}`.trim() : 'Unknown Farmer',
+        farm_name: p.farmer?.farm_name || 'Local Farm',
+        location: p.farmer?.farm_location || 'Unknown Location',
+        avatar: p.farmer?.avatar || farmer1Img,
+        bio: p.farmer?.bio || ''
+      };
+
+      setProduct({
+        ...p,
+        image: p.image || img,
+        price: parseFloat(p.price) || 0,
+        farmer_profile: mappedFarmer,
+        stock: p.available_stock || p.total_stock || 0
+      });
+    } catch (err) {
+      console.error('Failed to load product', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddToCart = async () => {
+    if (!product.in_stock) return;
     setAdding(true);
-    setTimeout(() => {
-      setAdding(false);
+    const res = await addToCart(product.id, quantity);
+    setAdding(false);
+    if (res.success) {
       setAdded(true);
       setTimeout(() => setAdded(false), 2000);
-    }, 600);
+    } else {
+      alert(res.error);
+    }
   };
 
-  const getFreshnessClass = (score) => {
-    if (score >= 90) return 'freshness-excellent';
-    if (score >= 60) return 'freshness-good';
-    if (score >= 40) return 'freshness-fair';
-    return 'freshness-low';
-  };
+  if (loading) return (
+    <>
+      <Navbar />
+      <div className="container py-32 flex flex-col items-center justify-center animate-pulse">
+        <div className="h-64 w-64 bg-slate-100 dark:bg-slate-800 rounded-3xl mb-8" />
+        <div className="h-8 bg-slate-100 dark:bg-slate-800 w-48 rounded mb-4" />
+        <div className="h-4 bg-slate-100 dark:bg-slate-800 w-32 rounded" />
+      </div>
+    </>
+  );
+
+  if (!product) return (
+    <>
+      <Navbar />
+      <div className="container py-32 text-center">
+        <h1 className="text-2xl font-serif text-brand-forest dark:text-white">Product not found.</h1>
+        <Button variant="link" asChild className="mt-4 text-brand-green">
+          <Link href="/products">Back to Market</Link>
+        </Button>
+      </div>
+    </>
+  );
 
   return (
     <>
       <Navbar />
-      <div className={styles.page}>
-        <div className="container">
-          <Link href="/products" className={styles.backLink}>
-            ← Back to Market
-          </Link>
+      <main className="min-h-screen bg-white dark:bg-slate-950 transition-colors duration-500 pt-24 pb-20">
+        <div className="container mx-auto px-4 md:px-6">
+          <Button variant="ghost" className="mb-8 group text-slate-500 dark:text-slate-400" asChild>
+            <Link href="/products">
+              <ArrowLeft className="mr-2 h-4 w-4 transition-transform group-hover:-translate-x-1" />
+              Back to Market
+            </Link>
+          </Button>
 
-          <div className={styles.layout}>
-            {/* Left: Image/Hero */}
-            <div className={styles.imageColumn}>
-              <div className={styles.imageBox}>
-                <Image src={product.image} alt={product.name} className={styles.mainImage} />
-                {product.organic && (
-                  <span className={styles.organicTag}>🌱 Organic Certified</span>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-start">
+            {/* Left Column: Visuals */}
+            <div className="lg:col-span-6 space-y-8">
+              <div className="relative aspect-square md:aspect-video lg:aspect-square rounded-[3rem] overflow-hidden shadow-2xl bg-brand-cream/30 dark:bg-slate-900 transition-colors duration-500">
+                <Image 
+                  src={product.image} 
+                  alt={product.name} 
+                  className="w-full h-full object-cover" 
+                />
+                {product.is_organic && (
+                  <div className="absolute top-6 left-6">
+                    <Badge className="bg-brand-green text-white px-4 py-1.5 text-sm border-none shadow-lg">
+                      <Leaf className="h-4 w-4 mr-2" /> Organic Certified
+                    </Badge>
+                  </div>
+                )}
+                {!product.in_stock && (
+                  <div className="absolute inset-0 bg-white/40 dark:bg-slate-950/40 backdrop-blur-sm flex items-center justify-center">
+                    <Badge variant="destructive" className="text-2xl px-8 py-3 shadow-2xl rotate-12">
+                      Out of Stock
+                    </Badge>
+                  </div>
                 )}
               </div>
 
-              {/* Farmer Mini Profile */}
-              <div className={styles.farmerCard}>
-                <div className={styles.farmerHeader}>
-                  <div className={styles.farmerAvatar}>
-                    <Image src={product.farmer.avatar} alt={product.farmer.name} className={styles.farmerAvatarImg} />
-                  </div>
-                  <div>
-                    <h4 className={styles.farmerName}>{product.farmer.farm_name}</h4>
-                    <p className={styles.farmerLocation}>📍 {product.farmer.location}</p>
-                  </div>
+              {/* Farmer Info Card */}
+              <div className="bg-brand-cream/40 dark:bg-slate-900/50 rounded-[2.5rem] p-6 border border-brand-green/10 dark:border-brand-green/20 flex items-center gap-6">
+                <div className="h-20 w-20 rounded-full overflow-hidden border-4 border-white dark:border-slate-800 shadow-md shrink-0">
+                  <Image 
+                    src={product.farmer_profile.avatar} 
+                    alt={product.farmer_profile.name} 
+                    className="w-full h-full object-cover" 
+                  />
                 </div>
-                <p className={styles.farmerBio}>
-                  Grown by {product.farmer.name}
-                </p>
+                <div>
+                  <h4 className="font-serif text-xl text-brand-forest dark:text-brand-green-light">{product.farmer_profile.farm_name}</h4>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 flex items-center mb-2">
+                    <MapPin className="h-3 w-3 mr-1.5 text-slate-400" /> {product.farmer_profile.location}
+                  </p>
+                  <p className="text-sm text-slate-700 dark:text-slate-300 font-medium">
+                    Grown by <span className="text-brand-green">{product.farmer_profile.name}</span>
+                  </p>
+                </div>
               </div>
             </div>
 
-            {/* Right: Details */}
-            <div className={styles.detailsColumn}>
-              <div className={styles.categoryWrap}>
-                <Link href={`/products?category=${product.category.slug}`} className={styles.categoryLink}>
-                  {product.category.name}
-                </Link>
+            {/* Right Column: Details */}
+            <div className="lg:col-span-6 space-y-10">
+              <div className="space-y-4">
+                <Badge variant="outline" className="text-brand-green border-brand-green/20 bg-brand-green/5 dark:bg-brand-green/10 font-bold tracking-wide">
+                  {product.category?.name || 'Fresh Produce'}
+                </Badge>
+                <h1 className="font-serif text-5xl md:text-6xl text-brand-forest dark:text-white leading-tight">
+                  {product.name}
+                </h1>
+                <div className="flex items-center gap-3">
+                  <span className="text-4xl font-bold text-slate-900 dark:text-white">{product.price.toFixed(0)} ETB</span>
+                  <span className="text-lg text-slate-400 font-medium">/ {product.unit}</span>
+                </div>
               </div>
 
-              <h1 className={styles.title}>{product.name}</h1>
-              
-              <div className={styles.priceSection}>
-                  <span className={styles.price}>{product.price.toFixed(0)} ETB</span>
-                  <span className={styles.unit}>/ {product.unit}</span>
-                </div>
+              <Separator className="bg-slate-100 dark:bg-slate-800" />
 
-              {/* Freshness Meter */}
-              <div className={styles.freshnessContainer}>
-                <div className={styles.freshnessHeader}>
-                  <div className={styles.freshnessTitle}>
-                    <span className={`freshness-dot ${getFreshnessClass(product.freshness)}`}></span>
-                    Freshness Indicator
+              {/* Freshness Indicator */}
+              <div className="space-y-4 bg-slate-50 dark:bg-slate-900/50 p-6 rounded-3xl border border-slate-100 dark:border-slate-800 transition-colors duration-500">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <div className={`h-3 w-3 rounded-full animate-pulse ${
+                      product.freshness_score >= 90 ? 'bg-green-500 shadow-[0_0_10px_#22c55e]' : 
+                      product.freshness_score >= 60 ? 'bg-yellow-500' : 'bg-orange-500'
+                    }`} />
+                    <span className="font-bold text-slate-700 dark:text-slate-300">Freshness Meter</span>
                   </div>
-                  <span className={styles.freshnessLabel}>{product.label}</span>
+                  <Badge variant="secondary" className="bg-white dark:bg-slate-800 shadow-sm border-none px-3 font-bold text-brand-forest dark:text-brand-green-light">
+                    {product.freshness_label}
+                  </Badge>
                 </div>
-                <div className={styles.freshnessBarBg}>
-                  <div 
-                    className={styles.freshnessBarFill} 
-                    style={{ 
-                      width: `${product.freshness}%`,
-                      backgroundColor: product.freshness >= 90 ? 'var(--fresh-green)' : 
-                                     product.freshness >= 60 ? 'var(--fresh-yellow)' : 'var(--fresh-orange)'
-                    }}
-                  ></div>
-                </div>
-                <p className={styles.harvestText}>
-                  🕐 Harvested: <strong>{product.harvestDate}</strong>
+                <Progress value={product.freshness_score} className="h-3 bg-white dark:bg-slate-800" indicatorClassName={
+                   product.freshness_score >= 90 ? 'bg-green-500' : 
+                   product.freshness_score >= 60 ? 'bg-yellow-500' : 'bg-orange-500'
+                } />
+                <p className="text-sm text-slate-500 dark:text-slate-400 flex items-center">
+                  <Calendar className="h-4 w-4 mr-2 text-slate-400" />
+                  Harvested on <strong className="ml-1 text-slate-700 dark:text-slate-200">{product.harvest_date}</strong>
                 </p>
               </div>
 
-              <div className={styles.description}>
-                <p>{product.description}</p>
-                <div className={styles.storyBox}>
-                  <strong>The Story:</strong> {product.story}
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <h4 className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <Info className="h-4 w-4 text-brand-green" /> Product Description
+                  </h4>
+                  <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
+                    {product.description || 'No description available for this item.'}
+                  </p>
                 </div>
+
+                {product.story && (
+                  <div className="relative p-6 bg-brand-cream/30 dark:bg-slate-900/50 rounded-[2rem] border-l-4 border-brand-green italic text-slate-700 dark:text-slate-300 transition-colors duration-500">
+                    <Sparkles className="absolute -top-3 -right-3 h-8 w-8 text-brand-sunrise opacity-20" />
+                    &quot;{product.story}&quot;
+                  </div>
+                )}
               </div>
 
-              {/* Add to Cart Actions */}
-              <div className={styles.actionArea}>
-                <div className={styles.quantityWrap}>
-                  <button 
-                    className={styles.qtyBtn} 
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  >−</button>
-                  <span className={styles.qtyValue}>{quantity}</span>
-                  <button 
-                    className={styles.qtyBtn}
-                    onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
-                  >+</button>
+              {/* Action Area */}
+              <div className="pt-6 space-y-6">
+                <div className="flex flex-wrap items-center gap-6">
+                  <div className="flex items-center bg-slate-100 dark:bg-slate-900 rounded-full p-1.5 border border-slate-200 dark:border-slate-800 transition-colors duration-500">
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="rounded-full h-10 w-10 text-brand-forest dark:text-white hover:bg-white dark:hover:bg-slate-800 hover:text-brand-green"
+                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                      disabled={quantity <= 1}
+                    >
+                      <Minus className="h-4 w-4" />
+                    </Button>
+                    <span className="w-12 text-center font-bold text-xl text-slate-900 dark:text-white">{quantity}</span>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="rounded-full h-10 w-10 text-brand-forest dark:text-white hover:bg-white dark:hover:bg-slate-800 hover:text-brand-green"
+                      onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
+                      disabled={quantity >= product.stock}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  
+                  <div className="text-sm text-slate-400 font-medium">
+                    {product.stock} {product.unit}s available
+                  </div>
                 </div>
 
-                <button 
-                  className={`btn btn-primary btn-lg ${styles.addToCartBtn} ${added ? styles.added : ''}`}
+                <Button 
+                  size="lg" 
+                  className={`w-full h-16 rounded-full text-xl font-bold shadow-xl transition-all active:scale-[0.98] ${
+                    added 
+                      ? 'bg-green-600 hover:bg-green-600 text-white' 
+                      : 'bg-brand-green hover:bg-brand-forest text-white'
+                  }`}
+                  disabled={adding || !product.in_stock || added}
                   onClick={handleAddToCart}
-                  disabled={adding || added}
                 >
-                  {adding ? <span className={styles.spinner}></span> : 
-                   added ? '✓ Added to Cart' : 
-                   '🌱 Add to Cart'}
-                </button>
+                  {adding ? (
+                    <div className="h-6 w-6 border-4 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : added ? (
+                    <span className="flex items-center gap-2"><CheckCircle2 className="h-6 w-6" /> Added to Cart!</span>
+                  ) : !product.in_stock ? (
+                    'Out of Stock'
+                  ) : (
+                    <span className="flex items-center gap-2"><ShoppingCart className="h-6 w-6" /> Add to Market Bag</span>
+                  )}
+                </Button>
+                
+                <p className="text-center text-xs text-slate-400 dark:text-slate-500 font-medium tracking-wide uppercase">
+                  Farm-to-table delivery within 24 hours
+                </p>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </main>
       <Footer />
     </>
   );

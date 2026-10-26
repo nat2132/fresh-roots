@@ -24,11 +24,11 @@ class CartAddItemView(APIView):
         quantity = int(request.data.get('quantity', 1))
 
         try:
-            product = Product.objects.get(id=product_id)
+            product = Product.objects.get(id=product_id, is_visible=True)
         except Product.DoesNotExist:
             return Response({'error': 'Product not found.'}, status=status.HTTP_404_NOT_FOUND)
 
-        if quantity > product.stock_quantity:
+        if quantity > product.available_stock:
             return Response({'error': 'Not enough stock available.'}, status=status.HTTP_400_BAD_REQUEST)
 
         cart_item, created = CartItem.objects.get_or_create(

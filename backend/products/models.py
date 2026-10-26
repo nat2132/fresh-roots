@@ -9,11 +9,12 @@ class Category(models.Model):
     slug = models.SlugField(unique=True)
     icon = models.CharField(max_length=50, default='🥬')
     description = models.TextField(blank=True, default='')
+    sort_order = models.PositiveIntegerField(default=0)
 
     class Meta:
         db_table = 'categories'
         verbose_name_plural = 'categories'
-        ordering = ['name']
+        ordering = ['sort_order', 'name']
 
     def __str__(self):
         return self.name
@@ -25,6 +26,16 @@ class Category(models.Model):
 
 
 class Product(models.Model):
+    """
+    Product listed on the platform.
+
+    CRITICAL RULES:
+    - Every product MUST have a farmer (F-ID) for traceability
+    - Products are created by Content Managers, NOT by farmers
+    - Visibility is controlled by is_visible flag
+    - Stock is tracked in the warehouse app, not here
+    """
+
     UNIT_CHOICES = [
         ('kg', 'Kilogram'),
         ('g', 'Gram'),
@@ -32,33 +43,77 @@ class Product(models.Model):
         ('piece', 'Piece'),
         ('pack', 'Pack'),
         ('dozen', 'Dozen'),
+        ('liter', 'Liter'),
     ]
 
+    # Traceability — MANDATORY
     farmer = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name='products'
+        'farmers.Farmer',
+        on_delete=models.PROTECT,
+        related_name='products',
+        help_text='REQUIRED: Farmer/supplier who produced this product (F-ID).'
     )
+    batch = models.ForeignKey(
+        'procurement.ProcurementBatch',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='products',
+        help_text='Procurement batch this product came from.'
+    )
+
+    # Product info
     name = models.CharField(max_length=200)
     slug = models.SlugField(unique=True)
     description = models.TextField()
-    story = models.TextField(blank=True, default='',
-                             help_text='The story behind this product — who grew it, how, etc.')
-    category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, related_name='products')
-    price = models.DecimalField(max_digits=10, decimal_places=2)
+    story = models.TextField(
+        blank=True, default='',
+        help_text='The story behind this product — origin, growing methods, etc.'
+    )
+    category = models.ForeignKey(
+        Category, on_delete=models.SET_NULL, null=True, related_name='products'
+    )
+
+    # Pricing
+    price = models.DecimalField(max_digits=10, decimal_places=2, help_text='Selling price')
+    cost_price = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0,
+        help_text='Procurement cost (internal only).'
+    )
     unit = models.CharField(max_length=10, choices=UNIT_CHOICES, default='kg')
-    stock_quantity = models.PositiveIntegerField(default=0)
+
+    # Media
     image = models.ImageField(upload_to='products/', blank=True, null=True)
+
+    # Product attributes
     harvest_date = models.DateField()
     origin_location = models.CharField(max_length=200)
     is_organic = models.BooleanField(default=False)
     is_featured = models.BooleanField(default=False)
+    is_visible = models.BooleanField(
+        default=False,
+        help_text='Content Manager controls whether product appears on storefront.'
+    )
+
+    # Audit
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='created_products',
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         db_table = 'products'
         ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['is_visible', 'is_featured'], name='idx_product_visibility'),
+            models.Index(fields=['category'], name='idx_product_category'),
+            models.Index(fields=['farmer'], name='idx_product_farmer'),
+            models.Index(fields=['harvest_date'], name='idx_product_harvest'),
+        ]
 
     def __str__(self):
         return self.name
@@ -100,5 +155,21 @@ class Product(models.Model):
             return 'Use Soon'
 
     @property
+    def total_stock(self):
+        """Aggregate stock across all warehouses."""
+        from django.db.models import Sum
+        result = self.inventory_items.aggregate(total=Sum('quantity'))
+        return result['total'] or 0
+
+    @property
+    def available_stock(self):
+        """Stock available for new orders."""
+        from django.db.models import Sum, F
+        result = self.inventory_items.aggregate(
+            available=Sum(F('quantity') - F('reserved_quantity'))
+        )
+        return max(0, result['available'] or 0)
+
+    @property
     def in_stock(self):
-        return self.stock_quantity > 0
+        return self.available_stock > 0
