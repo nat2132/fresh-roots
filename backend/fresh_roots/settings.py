@@ -1,20 +1,49 @@
 """
-Django settings for Fresh Roots project.
+Django settings for Fresh Roots Supply Chain Platform.
 """
 
+import os
 from pathlib import Path
 from datetime import timedelta
 
+import dj_database_url
+from django.core.exceptions import ImproperlyConfigured
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-fresh-roots-dev-key-change-in-production'
 
-DEBUG = True
+def _env_list(name):
+    """Read a comma-separated environment variable into a clean list."""
+    return [item.strip().rstrip('/') for item in os.getenv(name, '').split(',') if item.strip()]
 
-ALLOWED_HOSTS = ['*']
+
+DEBUG = os.getenv('DEBUG', 'True').lower() in ('1', 'true', 'yes', 'on')
+
+if DEBUG:
+    # Dev fallback so plain `python manage.py runserver` keeps working locally
+    SECRET_KEY = os.getenv('SECRET_KEY') or 'django-insecure-fresh-roots-dev-key-change-in-production'
+else:
+    SECRET_KEY = os.getenv('SECRET_KEY')
+    if not SECRET_KEY:
+        raise ImproperlyConfigured(
+            'SECRET_KEY must be set in the environment when DEBUG=False.'
+        )
+
+_host_list = _env_list('ALLOWED_HOSTS')
+if _host_list:
+    ALLOWED_HOSTS = _host_list
+elif DEBUG:
+    # Previous dev behaviour: allow any host locally (set ALLOWED_HOSTS for LAN/prod use)
+    ALLOWED_HOSTS = ['*']
+else:
+    raise ImproperlyConfigured(
+        'ALLOWED_HOSTS must be set in the environment when DEBUG=False.'
+    )
 
 # Application definition
 INSTALLED_APPS = [
+    'daphne',
+    'channels',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -26,16 +55,27 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'corsheaders',
     'django_filters',
-    # Local apps
+    # Local apps — order matters for dependencies
+    'core',
     'accounts',
+    'farmers',
+    'procurement',
     'products',
+    'warehouse',
     'cart',
     'orders',
+    'payments',
+    'deliveries',
+    'notifications',
+    'feedback',
+    'promotions',
+    'support',
 ]
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -63,22 +103,27 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'fresh_roots.wsgi.application'
+ASGI_APPLICATION = 'fresh_roots.asgi.application'
 
-# Database — SQLite for development, swap to PostgreSQL for production
-DATABASES = {
+# Channel Layers (InMemory for dev)
+CHANNEL_LAYERS = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-    # PostgreSQL config (uncomment when ready):
-    # 'default': {
-    #     'ENGINE': 'django.db.backends.postgresql',
-    #     'NAME': 'fresh_roots_db',
-    #     'USER': 'fresh_roots_user',
-    #     'PASSWORD': 'your_password_here',
-    #     'HOST': 'localhost',
-    #     'PORT': '5432',
-    # }
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+    },
+}
+
+# Database — DATABASE_URL (PostgreSQL) when set, otherwise local SQLite for development
+
+DATABASE_URL = os.getenv('DATABASE_URL')
+DATABASES = {
+    'default': (
+        dj_database_url.parse(DATABASE_URL, conn_max_age=600)
+        if DATABASE_URL
+        else {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    )
 }
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -94,6 +139,18 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+# WhiteNoise-compressed static file storage
+STORAGES = {
+    'default': {
+        'BACKEND': 'django.core.files.storage.FileSystemStorage',
+    },
+    'staticfiles': {
+        'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
+    },
+}
+
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
@@ -114,6 +171,14 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 12,
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '100/hour',
+        'user': '1000/hour',
+    },
 }
 
 # JWT Settings
@@ -129,8 +194,51 @@ SIMPLE_JWT = {
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:3000',
     'http://127.0.0.1:3000',
-]
+    'http://192.168.1.9:3000',
+    'http://192.168.1.10:3000',
+    'http://192.168.1.5:3000',
+] + _env_list('CORS_ALLOWED_ORIGINS')
 CORS_ALLOW_CREDENTIALS = True
+
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    'http://192.168.1.9:3000',
+    'http://192.168.1.10:3000',
+    'http://192.168.1.5:3000',
+] + _env_list('CSRF_TRUSTED_ORIGINS')
 
 # Email backend (console for dev)
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+# Logging
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO',
+        },
+        'orders': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+        },
+        'deliveries': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+        },
+    },
+}
